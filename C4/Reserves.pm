@@ -185,12 +185,16 @@ sub AddReserve {
         # Make room in reserves for this before those of a later reserve date
         $priority = _ShiftPriorityByDateAndPriority( $biblionumber, $resdate, $priority );
     }
+    my ($waitingdate, $lastpickupdate);
 
-    my $waitingdate;
-
+    my $item = C4::Items::GetItem( $checkitem );
     # If the reserv had the waiting status, we had the value of the resdate
     if ( $found eq 'W' ) {
         $waitingdate = $resdate;
+
+        #The reserve-object doesn't exist yet in DB, so we must supply what information we have to GetLastPickupDate() so it can do it's work.
+        my $reserve = {borrowernumber => $borrowernumber, waitingdate => $waitingdate, branchcode => $branch};
+        $lastpickupdate = GetLastPickupDate( $reserve, $item );
     }
 
     # Don't add itemtype limit if specific item is selected
@@ -211,6 +215,7 @@ sub AddReserve {
             expirationdate => $expdate,
             itemtype       => $itemtype,
             item_level_hold => $checkitem ? 1 : 0,
+            lastpickupdate => $lastpickupdate,
         }
     )->store();
     $hold->set_waiting() if $found eq 'W';
@@ -1022,9 +1027,29 @@ sub ModReserveStatus {
     my ($itemnumber, $newstatus) = @_;
     my $dbh = C4::Context->dbh;
 
-    my $query = "UPDATE reserves SET found = ?, waitingdate = NOW() WHERE itemnumber = ? AND found IS NULL AND priority = 0";
+    my $now = dt_from_string;
+    my $reserve = $dbh->selectrow_hashref(q{
+        SELECT *
+        FROM reserves
+        WHERE itemnumber = ?
+            AND found IS NULL
+            AND priority = 0
+    }, {}, $itemnumber);
+    return unless $reserve;
+
+    my $lastpickupdate = GetLastPickupDate( $reserve );
+
+    my $query = q{
+        UPDATE reserves
+        SET found = ?,
+            waitingdate = ?,
+            lastpickupdate = ?
+        WHERE itemnumber = ?
+            AND found IS NULL
+            AND priority = 0
+    };
     my $sth_set = $dbh->prepare($query);
-    $sth_set->execute( $newstatus, $itemnumber );
+    $sth_set->execute( $newstatus, $now, $lastpickupdate, $itemnumber );
 
     my $item = Koha::Items->find($itemnumber);
     if ( ( $item->location eq 'CART' && $item->permanent_location ne 'CART'  ) && $newstatus ) {
@@ -1530,6 +1555,7 @@ sub _Findgroupreserve {
                reserves.borrowernumber      AS borrowernumber,
                reserves.reservedate         AS reservedate,
                reserves.branchcode          AS branchcode,
+               reserves.lastpickupdate      AS lastpickupdate,
                reserves.cancellationdate    AS cancellationdate,
                reserves.found               AS found,
                reserves.reservenotes        AS reservenotes,
@@ -1565,6 +1591,7 @@ sub _Findgroupreserve {
                reserves.borrowernumber      AS borrowernumber,
                reserves.reservedate         AS reservedate,
                reserves.branchcode          AS branchcode,
+               reserves.lastpickupdate      AS lastpickupdate,
                reserves.cancellationdate    AS cancellationdate,
                reserves.found               AS found,
                reserves.reservenotes        AS reservenotes,
@@ -1600,6 +1627,7 @@ sub _Findgroupreserve {
                reserves.reservedate                AS reservedate,
                reserves.waitingdate                AS waitingdate,
                reserves.branchcode                 AS branchcode,
+               reserves.lastpickupdate             AS lastpickupdate,
                reserves.cancellationdate           AS cancellationdate,
                reserves.found                      AS found,
                reserves.reservenotes               AS reservenotes,
@@ -1820,6 +1848,42 @@ sub MoveReserve {
     }
 }
 
+=head MoveWaitingdate
+
+  #Move waitingdate two months and fifteen days forward.
+  my $dateDuration = DateTime::Duration->new( months => 2, days => 15 );
+  $reserve = MoveWaitingdate( $reserve, $dateDuration);
+
+  #Move waitingdate one year and eleven days backwards.
+  my $dateDuration = DateTime::Duration->new( years => -1, days => -11 );
+  $reserve = MoveWaitingdate( $reserve, $dateDuration);
+
+Moves the waitingdate and updates the lastpickupdate to match.
+If waitingdate is not defined, uses today.
+Is intended to be used from automated tests, because under normal library
+operations there should be NO REASON to move the waitingdate.
+
+@PARAM1 koha.reserves-row, with waitingdate set.
+@PARAM2 DateTime::Duration, with the desired offset.
+RETURNS koha.reserve-row, with keys waitingdate and lastpickupdate updated.
+=cut
+sub MoveWaitingdate {
+    my ($reserve, $dateDuration) = @_;
+
+    my $dt = dt_from_string( $reserve->{waitingdate} );
+    $dt->add_duration( $dateDuration );
+    $reserve->{waitingdate} = $dt->ymd();
+
+    GetLastPickupDate( $reserve ); #Update the $reserve->{lastpickupdate}
+
+    #UPDATE the DB part
+    my $dbh = C4::Context->dbh();
+    my $sth = $dbh->prepare( "UPDATE reserves SET waitingdate=?, lastpickupdate=? WHERE reserve_id=?" );
+    $sth->execute( $reserve->{waitingdate}, $reserve->{lastpickupdate}, $reserve->{reserve_id} );
+
+    return $reserve;
+}
+
 =head2 MergeHolds
 
   MergeHolds($dbh,$to_biblio, $from_biblio);
@@ -1918,7 +1982,8 @@ sub RevertWaitingStatus {
     SET
       priority = 1,
       found = NULL,
-      waitingdate = NULL
+      waitingdate = NULL,
+      lastpickupdate = NULL,
     WHERE
       reserve_id = ?
     ";

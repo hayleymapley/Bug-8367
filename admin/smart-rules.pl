@@ -240,10 +240,11 @@ elsif ($op eq 'add') {
     $no_auto_renewal_after_hard_limit = eval { dt_from_string( $input->param('no_auto_renewal_after_hard_limit') ) } if ( $no_auto_renewal_after_hard_limit );
     $no_auto_renewal_after_hard_limit = output_pref( { dt => $no_auto_renewal_after_hard_limit, dateonly => 1, dateformat => 'iso' } ) if ( $no_auto_renewal_after_hard_limit );
     my $reservesallowed  = $input->param('reservesallowed');
-    my $holds_per_record = $input->param('holds_per_record');
     my $holds_per_day    = $input->param('holds_per_day');
     $holds_per_day =~ s/\s//g;
     $holds_per_day = undef if $holds_per_day !~ /^\d+/;
+    my $holds_per_record  = $input->param('holds_per_record');
+    my $holdspickupwait = $input->param('holdspickupwait');
     my $onshelfholds     = $input->param('onshelfholds') || 0;
     $maxissueqty =~ s/\s//g;
     $maxissueqty = '' if $maxissueqty !~ /^\d+/;
