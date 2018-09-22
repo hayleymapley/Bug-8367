@@ -786,15 +786,15 @@ sub _parseletter {
 
     # Work on a local copy of $values_in (passed by reference) to avoid side effects
     # in callers ( by changing / formatting values )
-    my $values = $values_in ? { %$values_in } : {};
+   my $values = $values_in ? { %$values_in } : {};
 
     if ( $table eq 'borrowers' && $values->{'dateexpiry'} ){
         $values->{'dateexpiry'} = output_pref({ dt => dt_from_string( $values->{'dateexpiry'} ), dateonly => 1 });
     }
 
-    if ( $table eq 'reserves' && $values->{'waitingdate'} ) {
-        $values->{'waitingdate'} = output_pref({ dt => dt_from_string( $values->{'waitingdate'} ), dateonly => 1 });
-    }
+# if ( $table eq 'reserves' && $values->{'waitingdate'}) {
+#      $values->{'waitingdate'} = output_pref({ dt => dt_from_string( $values->{'waitingdate'} ), dateonly => 1 });
+#  }
 
     if ($letter->{content} && $letter->{content} =~ /<<today>>/) {
         my $todaysdate = output_pref( DateTime->now() );
@@ -811,7 +811,9 @@ sub _parseletter {
             my $av = Koha::AuthorisedValues->search({ category => 'ROADTYPE', authorised_value => $val });
             $val = $av->count ? $av->next->lib : '';
         }
-
+warn $table;
+warn $field;
+warn $val;
         # Dates replacement
         my $replacedby   = defined ($val) ? $val : '';
         if (    $replacedby

@@ -196,6 +196,7 @@
                             <td>[% rule.suspension_chargeperiod | html %]</td>
 							<td>[% rule.renewalsallowed | html %]</td>
                             <td>[% rule.renewalperiod | html %]</td>
+                            <td>[% rule.holdspickupwait | html %]</td>
                             <td>[% rule.norenewalbefore | html %]</td>
                             <td>
                                 [% IF ( rule.auto_renew ) %]

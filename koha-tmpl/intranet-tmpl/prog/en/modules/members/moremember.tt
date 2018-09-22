@@ -750,6 +750,7 @@
                                             <thead>
                                                 <tr>
                                                     <th>Hold date</th>
+                                                    <th>Last pickup date</th>
                                                     <th>Title</th>
                                                     <th>Call number</th>
                                                     <th>Barcode</th>

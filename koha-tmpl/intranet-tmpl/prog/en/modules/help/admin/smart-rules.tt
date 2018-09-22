@@ -7,23 +7,23 @@
 <p>The rules are applied from most specific to less specific, using the first found in this order:</p>
 
 <ul>
-	<li>same library, same patron type, same item type</li>
-	<li>same library, same patron type, all item type</li>
-	<li>same library, all patron types, same item type</li>
-	<li>same library, all patron types, all item types</li>
-	<li>all libraries, same patron type, same item type</li>
-	<li>all libraries, same patron type, all item types</li>
-	<li>all libraries, all patron types, same item type</li>
-	<li>all libraries, all patron types, all item types</li>
+ <li>same library, same patron type, same item type</li>
+ <li>same library, same patron type, all item type</li>
+ <li>same library, all patron types, same item type</li>
+ <li>same library, all patron types, all item types</li>
+ <li>all libraries, same patron type, same item type</li>
+ <li>all libraries, same patron type, all item types</li>
+ <li>all libraries, all patron types, same item type</li>
+ <li>all libraries, all patron types, all item types</li>
 </ul>
 
 <p>The CircControl and HomeOrHoldingBranch also come in to play when figuring out which circulation rule to follow.</p>
 
 <ul>
-	<li>If CircControl is set to "the library you are logged in at" circ rules will be selected based on the library you are logged in at</li>
-	<li>If CircControl is set to "the library the patron is from" circ rules will be selected based on the patron's library</li>
-	<li>If CircControl is set to "the library the item is from" circ rules will be selected based on the item's library where HomeOrHoldingBranch chooses if item's home library is used or holding library is used.</li>
-	<li>If IndependentBranches is set to 'Prevent' then the value of HomeOrHoldingBranch is used in figuring out if the item can be checked out. If the item's home library does not match the logged in library, the item cannot be checked out unless you are a superlibrarian.</li>
+ <li>If CircControl is set to "the library you are logged in at" circ rules will be selected based on the library you are logged in at</li>
+ <li>If CircControl is set to "the library the patron is from" circ rules will be selected based on the patron's library</li>
+ <li>If CircControl is set to "the library the item is from" circ rules will be selected based on the item's library where HomeOrHoldingBranch chooses if item's home library is used or holding library is used.</li>
+ <li>If IndependentBranches is set to 'Prevent' then the value of HomeOrHoldingBranch is used in figuring out if the item can be checked out. If the item's home library does not match the logged in library, the item cannot be checked out unless you are a superlibrarian.</li>
 </ul>
 
 <p>If you are a single library system choose your branch name before creating rules (sometimes having only rules for the 'all libraries' option can cause issues with holds)</p>
@@ -37,9 +37,9 @@
 <p>From the matrix you can choose any combination of patron categories and item types to apply the rules to</p>
 
 <ul>
-	<li>First choose which patron category you'd like the rule to be applied to. If you leave this to 'All' it will apply to all patron categories</li>
-	<li>Choose the 'Item Type' you would like this rule to apply to. If you leave this to 'All' it will apply to all item types</li>
-	<li>Limit the number of items a patron can have checked out at the same time by entering a number in the 'Current Checkouts Allowed' field</li>
+ <li>First choose which patron category you'd like the rule to be applied to. If you leave this to 'All' it will apply to all patron categories</li>
+ <li>Choose the 'Item Type' you would like this rule to apply to. If you leave this to 'All' it will apply to all item types</li>
+ <li>Limit the number of items a patron can have checked out at the same time by entering a number in the 'Current Checkouts Allowed' field</li>
     <li>Define the period of time an item can be checked out to a patron by entering the number of units (days or hours) in the 'Loan Period' box.</li>
     <li>Choose which unit of time, Days or Hours, that the loan period and fines will be calculate in</li>
     <li>You can also define a hard due date for a specific patron category and item type. A hard due date ignores your usual circulation rules and makes it so that all items of the type defined are due on, before or after the date you specify.</li>
@@ -119,7 +119,7 @@
 </li>
 </ul>
 </li>
-	<li>Once your policy is set, you can unset it by clicking the 'Unset' link to the right of the rule</li>
+ <li>Once your policy is set, you can unset it by clicking the 'Unset' link to the right of the rule</li>
 </ul>
 
 <h4>Checkouts Per Patron</h4>

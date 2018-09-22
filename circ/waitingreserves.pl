@@ -27,11 +27,11 @@ use C4::Circulation;
 use C4::Members;
 use C4::Biblio;
 use C4::Items;
-use Date::Calc qw(
-  Today
-  Add_Delta_Days
-  Date_to_Days
-);
+#use Date::Calc qw(
+#  Today
+#  Add_Delta_Days
+#  Date_to_Days
+#);
 use C4::Reserves;
 use C4::Koha;
 use Koha::DateUtils;
@@ -39,6 +39,7 @@ use Koha::BiblioFrameworks;
 use Koha::Items;
 use Koha::ItemTypes;
 use Koha::Patrons;
+use Data::Dumper;
 
 my $input = new CGI;
 
@@ -87,23 +88,22 @@ my $holds = Koha::Holds->waiting->search({ priority => 0, ( $all_branches ? () :
 
 # get reserves for the branch we are logged into, or for all branches
 
-my $today = Date_to_Days(&Today);
+my $today = dt_from_string;
+my $max_pickup_delay = C4::Context->preference('ReservesMaxPickUpDelay');
 
 while ( my $hold = $holds->next ) {
     next unless ($hold->waitingdate && $hold->waitingdate ne '0000-00-00');
-
     my $item = $hold->item;
     my $patron = $hold->borrower;
     my $biblio = $item->biblio;
     my $holdingbranch = $item->holdingbranch;
     my $homebranch = $item->homebranch;
-
     my %getreserv = (
         title             => $biblio->title,
         itemnumber        => $item->itemnumber,
         waitingdate       => $hold->waitingdate,
         reservedate       => $hold->reservedate,
-        borrowernum       => $patron->borrowernumber,
+        borrowernumber       => $patron->borrowernumber,
         biblionumber      => $biblio->biblionumber,
         barcode           => $item->barcode,
         homebranch        => $homebranch,
@@ -118,21 +118,34 @@ while ( my $hold = $holds->next ) {
     );
 
     my $itemtype = Koha::ItemTypes->find( $item->effective_itemtype );
-    my ( $expire_year, $expire_month, $expire_day ) = split (/-/, $hold->expirationdate);
-    my $calcDate = Date_to_Days( $expire_year, $expire_month, $expire_day );
-
-    if ($today > $calcDate) {
-        if ($cancelall) {
-            my $res = cancel( $hold->item->itemnumber, $hold->borrowernumber, $hold->item->holdingbranch, $hold->item->homebranch, !$transfer_when_cancel_all );
-            push @cancel_result, $res if $res;
-            next;
-        } else {
-            push @over_loop, $hold;
-        }
-    }else{
-        push @reserve_loop, $hold;
+    $getreserv{'itemtype'}       = $itemtype->description; # FIXME Should not it be translated_description?
+    $getreserv{'subtitle'}       = GetRecordValue(
+        'subtitle',
+        GetMarcBiblio({ biblionumber => $biblio->biblionumber }),
+        $biblio->frameworkcode);
+    if ( $homebranch ne $holdingbranch ) {
+        $getreserv{'dotransfer'} = 1;
     }
-    
+
+    $getreserv{patron} = $patron;
+    warn $getreserv{'waitingdate'};
+    warn $getreserv{'lastpickupdate'};
+    if ( $getreserv{'waitingdate'} ) {
+        my $lastpickupdate = dt_from_string($getreserv{'lastpickupdate'});
+        if ( DateTime->compare( $today, $lastpickupdate ) == 1 ) {
+            if ($cancelall) {
+                my $res = cancel( $item->itemnumber, $patron->borrowernumber, $item->holdingbranch, $homebranch, !$transfer_when_cancel_all );
+                push @cancel_result, $res if $res;
+                next;
+            } else {
+                push @overloop,   \%getreserv;
+                $overcount++;
+            }
+        }else{
+            push @reservloop, \%getreserv;
+            $reservcount++;
+        }
+    }
 }
 
 $template->param(cancel_result => \@cancel_result) if @cancel_result;
@@ -144,7 +157,7 @@ $template->param(
     overcount   => scalar @over_loop,
     show_date   => output_pref({ dt => dt_from_string, dateformat => 'iso', dateonly => 1 }),
     tab => $tab,
-    show_date   => format_date(C4::Dates->today('iso')),
+    show_date   => $today,
 );
 
 # Checking if there is a Fast Cataloging Framework
@@ -166,7 +179,6 @@ sub cancel {
     my $transfer = $fbr ne $tbr; # XXX && !$nextreservinfo;
 
     return if $transfer && $skip_transfers;
-
     my ( $messages, $nextreservinfo ) = ModReserveCancelAll( $item, $borrowernumber );
 
 # 	if the document is not in his homebranch location and there is not reservation after, we transfer it

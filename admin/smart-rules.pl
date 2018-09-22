@@ -278,6 +278,7 @@ elsif ($op eq 'add') {
         chargeperiod_charge_at        => $chargeperiod_charge_at,
         renewalsallowed               => $renewalsallowed,
         renewalperiod                 => $renewalperiod,
+        holdspickupwait               => $holdspickupwait,
         norenewalbefore               => $norenewalbefore,
         auto_renew                    => $auto_renew,
         no_auto_renewal_after         => $no_auto_renewal_after,
