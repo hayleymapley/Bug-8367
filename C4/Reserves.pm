@@ -724,10 +724,6 @@ sub GetLastPickupDate {
     } elsif ( $controlbranch eq "PatronLibrary" ) {
          $branchcode = $borrower->branchcode;
     }
-    warn 'getlastpickup';
-    warn $branchcode;
-    warn $borrower->{'categorycode'};
-    warn $item->{itype};
     my $issuingrule = Koha::IssuingRules->get_effective_issuing_rule({
             branchcode   => $branchcode,
             categorycode => $borrower->{'categorycode'},
@@ -920,7 +916,7 @@ sub CheckReserves {
 
   CancelExpiredReserves();
 
-Cancels all reserves with an expiration date from before today.
+Cancels all reserves with a lastpickupdate value from before today.
 
 =cut
 
@@ -928,14 +924,12 @@ sub CancelExpiredReserves {
     my $today = dt_from_string();
     my $cancel_on_holidays = C4::Context->preference('ExpireReservesOnHolidays');
     my $expireWaiting = C4::Context->preference('ExpireReservesMaxPickUpDelay');
-
     my $dtf = Koha::Database->new->schema->storage->datetime_parser;
-    my $params = { expirationdate => { '<', $dtf->format_date($today) } };
+    my $params = { lastpickupdate => { '<', $dtf->format_date($today) } };
     $params->{found} = [ { '!=', 'W' }, undef ]  unless $expireWaiting;
 
     # FIXME To move to Koha::Holds->search_expired (?)
     my $holds = Koha::Holds->search( $params );
-
     while ( my $hold = $holds->next ) {
         my $calendar = Koha::Calendar->new( branchcode => $hold->branchcode );
 
