@@ -792,10 +792,6 @@ sub _parseletter {
         $values->{'dateexpiry'} = output_pref({ dt => dt_from_string( $values->{'dateexpiry'} ), dateonly => 1 });
     }
 
-# if ( $table eq 'reserves' && $values->{'waitingdate'}) {
-#      $values->{'waitingdate'} = output_pref({ dt => dt_from_string( $values->{'waitingdate'} ), dateonly => 1 });
-#  }
-
     if ($letter->{content} && $letter->{content} =~ /<<today>>/) {
         my $todaysdate = output_pref( DateTime->now() );
         $letter->{content} =~ s/<<today>>/$todaysdate/go;
@@ -811,9 +807,7 @@ sub _parseletter {
             my $av = Koha::AuthorisedValues->search({ category => 'ROADTYPE', authorised_value => $val });
             $val = $av->count ? $av->next->lib : '';
         }
-warn $table;
-warn $field;
-warn $val;
+
         # Dates replacement
         my $replacedby   = defined ($val) ? $val : '';
         if (    $replacedby
