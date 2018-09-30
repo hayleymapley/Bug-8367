@@ -736,6 +736,7 @@ sub GetLastPickupDate {
     } else {
         $reservebranch = $reserve->branchcode;
     }
+
     if ( defined($issuingrule) && defined $issuingrule->holdspickupwait && $issuingrule->holdspickupwait > 0 ) { #If holdspickupwait is <= 0, it means this feature is disabled for this type of material.
         $date->add( days => $issuingrule->holdspickupwait );
         my $calendar = Koha::Calendar->new( branchcode => $reservebranch );
@@ -744,6 +745,11 @@ sub GetLastPickupDate {
                $date->add( days => 1 );
                $is_holiday = $calendar->is_holiday( $date );
         }
+
+        if ( C4::Context->preference("ExcludeHolidaysFromMaxPickUpDelay") ) {
+              $date = $calendar->days_forward( dt_from_string(), $issuingrule->holdspickupwait );
+        }
+
         $reserve->{lastpickupdate} = $date->ymd();
         return $date;
      }
